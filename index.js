@@ -1,5 +1,9 @@
 const express = require('express')
+var morgan = require('morgan')
 const app = express()
+
+app.use(express.json())
+app.use(morgan('tiny'))
 
 let persons = [
     { 
@@ -40,6 +44,60 @@ app.get('/api/persons/:id', (request, response) => {
     response.json(person)
   else
     response.status(404).end()
+})
+
+app.delete('/api/persons/:id', (request, response) => {
+  const id = request.params.id
+  persons = persons.filter(person => person.id !== id)
+
+  response.status(204).end()
+})
+
+const generateId = () => {
+  const rangeMax = 10000
+
+  const randomFloat = Math.random() * rangeMax
+  return String(Math.floor(randomFloat))
+}
+
+app.post('/api/persons', (request, response) => {
+  const body = request.body
+  if (!body.name) {
+    return response.status(400).json({
+      error: 'name missing'
+    })
+  }
+
+  if (!body.number) {
+    return response.status(400).json({
+      error: 'number missing'
+    })
+  }
+
+  console.log(persons)
+  if (persons.find(p => p.name === body.name)) {
+    return response.status(400).json({
+      error: 'this name already exists'
+    })
+  }
+
+  const person = {
+    id: generateId(),
+    name: body.name,
+    number: body.number,
+  }
+
+  persons = persons.concat(person)
+
+  response.json(person)
+})
+
+app.get('/info', (request, response) => {
+  const infoString = `Phonebook has info for ${persons.length} people`
+
+  const timeString = Date()
+
+  response.send(`<p>${infoString}</p><p>${timeString}</p>`)
 })
 
 const PORT = 3001
