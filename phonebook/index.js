@@ -1,6 +1,20 @@
+require('dotenv').config()
 const cors = require('cors')
 const express = require('express')
+const Person = require('./models/person')
 var morgan = require('morgan')
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
+
+  console.log(error.name)
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  }
+
+  next(error)
+}
+
 const app = express()
 
 app.use(cors())
@@ -46,24 +60,24 @@ app.get('/', (request, response) => {
 })
 
 app.get('/api/persons', (request, response) => {
-  response.json(persons)
+  Person.find({}).then(persons => {
+    response.json(persons)
+  })
 })
 
 app.get('/api/persons/:id', (request, response) => {
-  const id = request.params.id
-  const person = persons.find(person => person.id === id)
-
-  if (person)
-    response.json(person)
-  else
-    response.status(404).end()
+  Person.findById(request.params.id)
+    .then(person => {
+      response.json(person)
+    })
 })
 
 app.delete('/api/persons/:id', (request, response) => {
-  const id = request.params.id
-  persons = persons.filter(person => person.id !== id)
-
-  response.status(204).end()
+  Person.findByIdAndDelete(request.params.id)
+    .then(result => {
+      response.status(204).end()
+    })
+    .catch(error => next(error))
 })
 
 const generateId = () => {
@@ -72,6 +86,21 @@ const generateId = () => {
   const randomFloat = Math.random() * rangeMax
   return String(Math.floor(randomFloat))
 }
+
+app.put('/api/persons/:id', (request, response) => {
+  const body = request.body
+
+  const person = {
+    name: body.name,
+    number: body.number
+  }
+
+  Person.findByIdAndUpdate(request.params.id, person, { new: true })
+    .then(updatedPerson => {
+      response.json(updatedPerson)
+    })
+    .catch(error => next(error))
+})
 
 app.post('/api/persons', (request, response) => {
   const body = request.body
@@ -87,33 +116,28 @@ app.post('/api/persons', (request, response) => {
     })
   }
 
-  console.log(persons)
-  if (persons.find(p => p.name === body.name)) {
-    return response.status(400).json({
-      error: 'this name already exists'
-    })
-  }
-
-  const person = {
+  const person = new Person ({
     id: generateId(),
     name: body.name,
     number: body.number,
-  }
+  })
 
-  persons = persons.concat(person)
-
-  response.json(person)
+  person.save().then(savedPerson => {
+    response.json(savedPerson)
+  })
 })
 
 app.get('/info', (request, response) => {
-  const infoString = `Phonebook has info for ${persons.length} people`
-
-  const timeString = Date()
-
-  response.send(`<p>${infoString}</p><p>${timeString}</p>`)
+  Person.countDocuments({})
+    .then(amount => {
+      response.send(`<p>Phonebook has info for ${amount} people</p>
+                     <p>${Date()}</p>`)
+    })
 })
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
+
+app.use(errorHandler)
