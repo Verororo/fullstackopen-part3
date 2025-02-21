@@ -33,30 +33,6 @@ app.use(morgan(
   ':method :url :status :res[content-length] - :response-time ms :post-content'
 ))
 
-
-let persons = [
-    { 
-      "id": "1",
-      "name": "Arto Hellas", 
-      "number": "040-123456"
-    },
-    { 
-      "id": "2",
-      "name": "Ada Lovelace", 
-      "number": "39-44-5323523"
-    },
-    { 
-      "id": "3",
-      "name": "Dan Abramov", 
-      "number": "12-43-234345"
-    },
-    { 
-      "id": "4",
-      "name": "Mary Poppendieck", 
-      "number": "39-23-6423122"
-    }
-]
-
 app.get('/', (request, response) => {
   response.send('<h1>This is the main page</h1>')
 })
@@ -74,20 +50,13 @@ app.get('/api/persons/:id', (request, response) => {
     })
 })
 
-app.delete('/api/persons/:id', (request, response) => {
+app.delete('/api/persons/:id', (request, response, next) => {
   Person.findByIdAndDelete(request.params.id)
     .then(result => {
       response.status(204).end()
     })
     .catch(error => next(error))
 })
-
-const generateId = () => {
-  const rangeMax = 10000
-
-  const randomFloat = Math.random() * rangeMax
-  return String(Math.floor(randomFloat))
-}
 
 app.put('/api/persons/:id', (request, response, next) => {
   const { name, number } = request.body
@@ -118,14 +87,13 @@ app.post('/api/persons', (request, response, next) => {
   }
 
   const person = new Person ({
-    id: generateId(),
     name: body.name,
     number: body.number,
   })
 
   person.save()
     .then(savedPerson => {
-    response.json(savedPerson)
+      response.json(savedPerson)
     })
     .catch(error => next(error))
 })
