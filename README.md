@@ -1,3 +1,3 @@
-The course required to do the exercises for the third part in a separate repository, so here it is.
+Exercises for the part 3 of the Full Stack Open course, required to do in a separate repository
 
 Link to the online app: https://fullstackopen-phonebook-k2co.onrender.com
